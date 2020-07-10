@@ -52,16 +52,16 @@ class Disbursement{
     /** process query */
     if (!$conn->query($query)) {
       /** if get error */
-      /** set status Internal Server Error */
+      /** set header status Internal Server Error */
       $status = 500;
 
-      /** set result */
+      /** set result with error message */
       $result = [
         'message' => 'error: ' . $conn->error
       ];
     } else {
       /** if success */
-      /** set status Success */
+      /** set header status is Success */
       $status = 200;
 
       /** set result */
@@ -106,78 +106,56 @@ class Disbursement{
 
       /** check status from database */
       if ($disbursement_status_db === "PENDING") {
+        /** set url check status */
+        $url = "https://nextar.flip.id/disburse/" . $flip_id;
 
-        /** initiate flip status from database */
-        $disbursement_status_flip = $disbursement_status_db;
+        /** check status request */
+        $responseCurl = $helper->getRequestWithCurl($url);
 
-        /** initiate variable i for looping break */
-        $i=0;
+        /** decode flip response from JSON to array object */
+        $responseCurl = json_decode($responseCurl, true);
 
-        /** check status to flip using while loop,
-         * because sometimes the status changes to success more than once.
-         */
-        while ($disbursement_status_flip === "PENDING") {
-          /** set url check status */
-          $url = "https://nextar.flip.id/disburse/" . $flip_id;
+        /** set query for update */
+        $query = "update disbursement set
+          status = '" . $responseCurl['status'] . "',
+          receipt = '" . $responseCurl['receipt'] . "',
+          time_served = '" . $responseCurl['time_served'] . "',
+          updated_date = '" . date('Y-m-d H-i-s') . "' where id = '" . $disbursement_id . "'";
 
-          /** check status request */
-          $responseCurl = $helper->getRequestWithCurl($url);
+        /** process query */
+        if (!$conn->query($query)) {
+          /** if failed, it will set header status Internal Server Error */
+          $status = 500;
 
-          /** decode flip response from JSON to array object */
-          $responseCurl = json_decode($responseCurl, true);
-
+          /** set result with error message */
+          $result = [
+            'message' => 'error: ' . $conn->error
+          ];
+        } else {
           /** get status from response */
           $disbursement_status_flip = $responseCurl['status'];
 
-          /** increment variable i */
-          $i++;
+          /** checking for last flip status */
+          if ($disbursement_status_flip === "PENDING") {
+            /** if PENDING, it will return message, to re-check the process */
+            /** set header status is Success */
+            $status = 200;
 
-          /** if the loop is more than 5 times it will be terminated */
-          if ($i == 5) {
-            break;
-          }
-        }
-
-        /** checking for last flip status */
-        if ($disbursement_status_flip === "PENDING") {
-          /** if PENDING,
-           * it will return message, to re-check the process
-           */
-
-          /** set status Success */
-          $status = 200;
-
-          /** set result with message */
-          $result = [
-            'message' => 'success',
-            'data' => [
-              'disbursement_id' => $disbursement_id,
-              'status' => $disbursement_status_flip,
-              'message' => "the status hasn't changed, please try again!"
-            ]
-          ];
-        } else if ($disbursement_status_flip === "SUCCESS") {
-          /** if SUCCESS
-           * it will update some data (status, receipt, time_reserved and updated_date)
-           */
-          /** set query for update */
-          $query = "update disbursement set 
-            status = '" . $responseCurl['status'] . "', 
-            receipt = '" . $responseCurl['receipt'] . "', 
-            time_served = '" . $responseCurl['time_served'] . "',
-            updated_date = '" . date('Y-m-d H-i-s') . "' where id = '" . $disbursement_id . "'";
-
-          /** process query */
-          if (!$conn->query($query)) {
-            /** if failed, it will set status Internal Server Error */
-            $status = 500;
-
-            /** set result with error message */
+            /** set result with message */
             $result = [
-              'message' => 'error: ' . $conn->error
+              'message' => 'success',
+              'data' => [
+                'disbursement_id' => $disbursement_id,
+                'status' => $disbursement_status_flip,
+                'message' => "the status hasn't changed, please try again!"
+              ]
             ];
-          } else {
-            /** if success, it will set Success for header */
+          } else if ($disbursement_status_flip === "SUCCESS") {
+            /** if SUCCESS
+             * it will update some data (status, receipt, time_reserved and updated_date)
+             */
+
+            /** set header status is Success */
             $status = 200;
 
             /** set result with status SUCCESS */
@@ -189,12 +167,10 @@ class Disbursement{
               ]
             ];
           }
-
         }
-
       } else {
         /** conditions, if the status in the database is SUCCESS */
-        /** set Success */
+        /** set header status is Success */
         $status = 200;
 
         /** set result */
@@ -205,19 +181,16 @@ class Disbursement{
             'status' => $disbursement_status_db
           ]
         ];
-
       }
-
     } else {
       /** conditions, if disbursement id not found in database */
-      /** set not found */
+      /** set header status not found */
       $status = 404;
 
       /** set result with message not found*/
       $result = [
         'message' => 'Data not found!',
       ];
-
     }
 
     /** return result in JSON */
