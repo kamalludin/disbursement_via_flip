@@ -32,16 +32,14 @@ switch ($request) {
 
   /** for disbursement request */
   case '/disbursementRequest' :
-    // $conn = $db->getConnection();
+    /** go to process */
     $disbursement->requestToFlip($conn);
-    // $conn->close();
     break;
 
   /** for check disbursement status */
   case '/checkDisbursementStatus' :
-    // $conn = $db->getConnection();
+    /** go to process */
     $disbursement->checkDisbursementStatus($conn);
-    // $conn->close();
     break;
 
   /** not found */
