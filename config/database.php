@@ -2,33 +2,39 @@
 
 class Database{
 
-  // var $host = "127.0.0.1";
-	// var $username = "root";
-	// var $password = "";
-  // var $dbname = "disbursement_via_flip";
+  function getConnectionDB($dbhost, $dbuser, $dbpass){
+    /** set connection using mysqli */
+    $conn = new mysqli($dbhost, $dbuser, $dbpass, "");
 
-	// function __construct(){
-  //   $conn = mysqli_connect($this->host, $this->username, $this->password);
-  //   mysqli_select_db($conn, $this->dbname);
-  // }
-
-  // function getConnection(){
-  //   $conn = new mysqli($this->host, $this->username, $this->password, $this->dbname);
-  //   if ($conn->connect_error) {
-  //     die("Connection failed: " . $conn->connect_error);
-  //   }
-  //   return $conn;
-  // }
-
-  function getConnection(){
-    $host = env("DB_HOST");
-    $username = env("DB_USERNAME");
-    $password = env("DB_PASSWORD");
-    $dbname = env("DB_NAME");
-    $conn = new mysqli($host, $username, $password, $dbname);
+    /** check connection */
     if ($conn->connect_error) {
       die("Connection failed: " . $conn->connect_error);
     }
+
+    return $conn;
+  }
+
+  function getConnectionDisbursement(){
+    /** get db host */
+    $dbhost = env("DB_HOST");
+
+    /** get db user */
+    $dbuser = env("DB_USER");
+
+    /** get db password */
+    $dbpass = env("DB_PASSWORD");
+
+    /** get connection DB */
+    $conn = $this->getConnectionDB($dbhost, $dbuser, $dbpass);
+
+    /** get db name */
+    $dbname = env("DB_NAME");
+
+    /** set db name */
+    if (!$conn->select_db($dbname)) {
+      die("Uh oh, couldn't select database $dbname");
+    }
+
     return $conn;
   }
 
